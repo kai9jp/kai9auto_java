@@ -1,0 +1,102 @@
+﻿# UTF-8でエンコードされたプロパティーファイルです
+charset: UTF-8
+
+# jasypt.encryptor.password=mypassword
+jasypt:
+  encryptor:
+    password: ${JASYPT_ENCRYPTOR_PASSWORD:}
+
+# -----DB設計-----
+spring:
+  jpa:
+    open-in-view: false
+    database: POSTGRESQL
+  devtools:
+    remote:
+      restart:
+        enabled: true
+    livereload:
+      enabled: true
+  datasource:
+    # primary database
+    # primary database
+    primary:
+      url: jdbc:postgresql://192.168.0.0:5432/kai9auto?ApplicationName=kai9auto-auto
+      # IDとPWは暗号化しているのでOSの環境変数にパスフレーズを登録しないと動かない
+      username: ENC(o87UnH05Kul4+CU0IkansaindaHho6YsKypLz4InVCqxf/MajwiJycWfIgsCe037Cp+XoMsrW)
+      password: ENC(+Uz+04AB4/TJL0TvAcNLZyww1TZ1Nwv3lhcCOpalamameaI3EAlEcwdmuTPecTUL/VV132i0U)
+      driverClassName: org.postgresql.Driver
+      maximumPoolSize: 10
+      minimumidle: 1      
+      schema: kai9test
+    # common database
+    common:
+      url: jdbc:postgresql://192.168.0.0:5432/kai9com?ApplicationName=kai9auto-com
+      # IDとPWは暗号化しているのでOSの環境変数にパスフレーズを登録しないと動かない
+      username: ENC(AP2t5fru/EZVMrE9EdkamanautG7MlG8rcfn7492ftA7fWEkg8tQBP2lGOBE/aUhhw/j6A)
+      password: ENC(ZNc1zGYIrB/Tdq1Sbk0VDfuBPbalaman6rG/dfufVLB/7Ip3l4Ky1s4YtZJtUYQO0umjE9)
+      driverClassName: org.postgresql.Driver
+      maximumPoolSize: 10
+      minimumidle: 1      
+      schema: kai9com
+    # som database
+    som:
+      url: jdbc:postgresql://192.168.0.0:5432/kai9som?ApplicationName=kai9som-som
+      # IDとPWは暗号化しているのでOSの環境変数にパスフレーズを登録しないと動かない
+      username: kai9somadmin
+      password: ENC(P6zYQOS0o/naC8hgE/iHiiAFKk0aaCalapaineapXg+YI0Z6KqNOVgUqf7kIcZfQ2Aza90SG)
+      driverClassName: org.postgresql.Driver
+      maximumPoolSize: 10
+      minimumidle: 1
+      schema: kai9som
+      
+#SELECT * FROM pg_stat_activity order by datname,backend_start ;
+# https://stackoverflow.com/questions/15261456/how-do-i-disable-fail-on-empty-beans-in-jackson
+
+# -----SSL-----
+# ポート番号
+server:
+  port: 9443
+  ssl:
+    # プロトコル
+    protocol: TLSv1.3
+    # キーストア・タイプ
+    key-store-type: PKCS12
+    # 鍵の格納先(本物証明書2022/10～90日有効)
+    key-store: classpath:keystore/keystore.p12
+    # 鍵の格納先(自己証明書)
+    # key-store: classpath:keystore/self_keystore.p12
+    # 鍵のパスワード
+    key-store-password: hoge
+    # keystore内部におけるkeypairの名称
+    key-alias: kai9keypair
+
+#-----JWT-----
+jwt:
+  domain: kai9.com
+  secretKey: ENC(SvmtTEyxGF3J2AEhquHaB7dnajahenaFNbXxqWHnSRt0uwYkqXKwzM9J/41ZPYjLZBLTpC6QcLVDbDeX/ROyOELi4CJdYQ==)
+
+#-----KAI9-----
+#ドメイン名
+kai9:
+  is_develop: true
+  on_debug_log: false
+  #起動時に実行開始する処理番号(カンマ区切りでの指定可)
+  startUp_S1id: 1015
+  auto_run_pw: ENC(NYn4M5EGp5yxykl/3ilmapm,eas5GsUyyvdkYkJeo0TsrFBOp/BxVu0lCLrkQnq2JPOTjtOPU5MeVG82T6vNkVT+Sqcw/qIDfUNAxj5o4R28KWlAW30=)
+
+mail:
+  host: sample.co.jp
+  port: 123
+  username: kai9
+  password: ENC(yf8PaVkl6FIg+YJrnSJkPU9kenabekams4Q1lamanesRRewHdmMinAydc2)
+  fromAddress: auto@sample_kai9.jp
+
+# -----ログファイル-----
+# ログを出力するレベル(デフォルトINFO)
+logging:
+  level:
+    root: INFO
+  file:
+    path: D:\logs\kai9auto
+

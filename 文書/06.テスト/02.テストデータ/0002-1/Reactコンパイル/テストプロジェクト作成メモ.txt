@@ -1,0 +1,30 @@
+cd CompileOK
+
+#新しいNode.jsプロジェクトを初期化
+npm init -y
+
+#TypeScriptコンパイラを開発依存関係としてプロジェクトに追加します。
+npm install --save-dev typescript
+
+#tsconfig.json 作成(プロジェクトのルートに)
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "noImplicitAny": true,
+    "module": "commonjs",
+    "target": "es6",
+    "strict": true
+  },
+  "include": ["src/**/*"]
+}
+
+#srcディレクトリを作成し、その中にindex.tsという名前のTypeScriptファイルを作成し1行だけ記載
+console.log('Hello, world!');
+
+#package.jsonにbuild箇所を追記
+"scripts": {
+  "build": "tsc"
+}
+
+#コンパイル出来るか確認
+npm run build
