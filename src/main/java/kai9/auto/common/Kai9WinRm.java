@@ -238,7 +238,7 @@ public class Kai9WinRm {
         // 5. 結果をリモート側から回収
         String readResultCommand = String.format("Get-Content -Path %s", resultPath);
         WinRmResponse resultResponse = executePowershellWithResponse2(readResultCommand);
-        response = new WinRmResponse(response.getStatusCode(), resultResponse.getStdout(), resultResponse.getStderr(), response.getDuration());
+        response = new WinRmResponse(response.getStatusCode(), response.getStdout()+resultResponse.getStdout(), response.getStderr()+resultResponse.getStderr(), response.getDuration());
 
         // 6. リモートのクリーンアップ(作成した一時ファイルを削除)
         String cleanupScript = "Remove-Item -Path '" + resultPath + "' -Force";
@@ -276,9 +276,12 @@ public class Kai9WinRm {
         String[] results = sendWinRMRequest(commandBody);
         String commandId = results[2]; // コマンドIDを取得
 
-        // すべての出力を受け取るまで繰り返し
         StringBuilder stdoutBuilder = new StringBuilder();
         StringBuilder stderrBuilder = new StringBuilder();
+        stdoutBuilder.append(results[3]);
+        stderrBuilder.append(results[4]);
+        
+        // すべての出力を受け取るまで繰り返し
         String outputRequestBody = createOutputRequestMessage(shellId, commandId);
         boolean isEndOfStream = false;
 
@@ -559,6 +562,7 @@ public class Kai9WinRm {
                 decodedOutput.append(Output);
             }
         }
+        
         return decodedOutput.toString();
         // return decodedOutput.toString().replaceAll("[\\x00-\\x1F\\x7F]", "");//ASCII制御文字(制御コード)を削除
     }

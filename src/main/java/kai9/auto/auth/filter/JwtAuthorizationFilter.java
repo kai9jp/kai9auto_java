@@ -116,6 +116,7 @@ public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
             Algorithm algorithm = Algorithm.HMAC256(secretKey);
             JWTVerifier verifier = JWT.require(algorithm)
                     .withIssuer("com.kai9")
+                    .acceptLeeway(180)// 180秒（3分）の時刻のずれを許容。それ以上、サーバ間の時刻がずれている場合、API通信が無応答になる
                     .build();
             DecodedJWT jwt = verifier.verify(token);
             String user = jwt.getSubject();

@@ -10,6 +10,7 @@ import org.json.JSONException;
 import org.springframework.stereotype.Component;
 
 import kai9.auto.common.Syori3Param;
+import kai9.libs.Kai9Utils;
 
 @Component
 public class ServiceStop {
@@ -129,7 +130,7 @@ public class ServiceStop {
                 }
 
             } catch (Exception e) {
-                s3p.sr3s.updateError(s3p.sr3, "サービスの停止に失敗しました" + crlf + "コマンド=net stop " + serviceName + crlf + output.toString() + crlf + e.getMessage());
+                s3p.sr3s.updateError(s3p.sr3, "サービスの停止に失敗しました" + crlf + "コマンド=net stop " + serviceName + crlf + output.toString() + crlf + Kai9Utils.GetException(e));
             }
         } catch (Exception e) {
             s3p.sr3s.updateError(s3p.sr3, e.toString());

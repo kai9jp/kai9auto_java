@@ -2,6 +2,7 @@ package kai9.auto.keyword;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -16,6 +17,7 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Component;
 
 import kai9.libs.Kai9Utils;
@@ -28,8 +30,10 @@ public class web_SetText_Id {
      * [web]テキスト入力(id)
      * 第１引数：id
      * 第２引数：値
+     * 第３引数：タイムアウト値(省略可)
      */
     public void exec(Syori3Param s3p) throws CloneNotSupportedException, IOException, JSONException, SQLException {
+        int timeOut = 0;
         try {
             if (s3p.s3.getValue1().trim().isEmpty()) {
                 s3p.sr3s.updateError(s3p.sr3, "第１引数は省略できません。");
@@ -41,6 +45,21 @@ public class web_SetText_Id {
 //    		}
             String id = s3p.s3.getValue1();
             String value = s3p.s3.getValue2();
+            
+            
+            // 第3引数の解析
+            String timeOutSeconds = s3p.s3.getValue3().trim();
+            timeOut = web_SetWebDriver.TIMEOUT_SECONDS; // デフォルトのタイムアウト値（省略時）
+            if (!timeOutSeconds.isEmpty()) {
+                try {
+                    timeOut = Integer.parseInt(timeOutSeconds.trim());
+                    // 第3引数にタイムアウト値がセットされている場合は変更する
+                    s3p.wait = new WebDriverWait(s3p.driver, Duration.ofSeconds(timeOut));
+                } catch (Exception e) {
+                    s3p.sr3s.updateError(s3p.sr3, "第３引数のタイムアウト値が不正です。");
+                    return;
+                }
+            }
 
             WebElement element = null;
             try {
@@ -80,10 +99,13 @@ public class web_SetText_Id {
                 // 数値型のインプットで、初期値0をClear出来ず、1が01となる事象があるので、その対策
                 // 数値型で、BigInt最大値付近の大きな数を上手く処理できない事象があるので、その対策
                 String script = "if (arguments[0] instanceof HTMLInputElement) {" +
-                // ブラウザ標準のvalue設定メソッドを取得
+                        // 数値型のインプットで、初期値0をClear出来ず、1が01となる事象があるので、その対策
+                        // 数値型で、BigInt最大値付近の大きな数を上手く処理できない事象があるので、その対策
+                        "var valueToSet = typeof arguments[1] === 'bigint' ? arguments[1].toString() : arguments[1];" +
+                        // ブラウザ標準のvalue設定メソッドを取得
                         "var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;" +
                         // ブラウザ標準の設定メソッドを使用して、ターゲット要素の値を設定
-                        "nativeInputValueSetter.call(arguments[0], arguments[1]);" +
+                        "nativeInputValueSetter.call(arguments[0], valueToSet);" +
                         "} else if (arguments[0] instanceof HTMLTextAreaElement) {" +
                         // ブラウザ標準のvalue設定メソッドを取得
                         "var nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;" +
@@ -93,7 +115,8 @@ public class web_SetText_Id {
                         // inputイベントを手動で発火させて、Reactや他のライブラリが変更を検知できるようにする
                         "arguments[0].dispatchEvent(new Event('input', { bubbles: true }));";
 
-                executor.executeScript(script, targetElement, value);
+                    // DOM 操作前に BigInt を文字列に変換して設定
+                    executor.executeScript(script, targetElement, value.toString());
 
                 String inputValue = element.getAttribute("value");
                 if (inputValue.equals(value)) {
@@ -126,6 +149,11 @@ public class web_SetText_Id {
         } catch (Exception e) {
             s3p.WebUpdateError(s3p.sr3, Kai9Utils.GetException(e));// スクショ付エラー
             return;
+        }finally {
+            if (timeOut != 0) {
+                // タイムアウト値が変更されている場合は戻す
+                s3p.wait = new WebDriverWait(s3p.driver, Duration.ofSeconds(web_SetWebDriver.TIMEOUT_SECONDS));
+            }
         }
     }
 

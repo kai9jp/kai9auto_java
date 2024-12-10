@@ -78,7 +78,8 @@ public class SpringCompile {
                 if (s3p.sr3.getIs_suspension()) {
                     s3p.sr3s.updateError(s3p.sr3, "中止されました" + crlf + "[プロセスの終了コード]" + exitCode + crlf + "[コンパイル結果]" + crlf + compileResult);
                 } else {
-                    if (!compileResult.toString().toLowerCase().contains("error")) {
+                    //if (!compileResult.toString().toLowerCase().contains("error")) { ソースコードと、そのパスの名前にerrorを含む物が有り、これだとダメだったので、単純にexitコードでの確認に変更(元々、何故exitコードでの確認にしていなかったのか不明)
+                    if (exitCode == 0) {
                         s3p.sr3s.updateSuccess(this.getClass().getSimpleName(), 100, s3p, "実行終了" + crlf + "[プロセスの終了コード]" + exitCode + crlf + "[コンパイル結果]" + crlf + compileResult);
                     } else {
                         s3p.sr3s.updateError(s3p.sr3, "異常終了" + crlf + "[プロセスの終了コード]" + exitCode + crlf + "[コンパイル結果]" + crlf + compileResult);

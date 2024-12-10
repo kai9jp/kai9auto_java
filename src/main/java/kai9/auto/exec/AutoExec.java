@@ -98,7 +98,7 @@ public class AutoExec implements ApplicationRunner {
     private static final String[] JAPANESE_DAYS = { "月", "火", "水", "木", "金", "土", "日" };
 
     // 処理排他の強制ロック解除時間
-    private static final int LOCK_TIMEOUT_MINUTES = 1;
+    private static final int LOCK_TIMEOUT_MINUTES = 1;//1分
 
     // コンストラクタでAPI実行用の各部品を生成(Export_s_excel.javaにも同じ実装有り。変更時は揃える事)
     public AutoExec(WebClient.Builder webClientBuilder, @Value("${server.port}")
@@ -167,11 +167,26 @@ public class AutoExec implements ApplicationRunner {
             // スレッドプールを作成
             String startUp_S1id = String.valueOf(Kai9Utils.getPropertyFromYaml("kai9.startUp_S1id"));
             List<String> startUp_S1ids = Arrays.asList(startUp_S1id.split(","));
-            for (String item : startUp_S1ids) {
-                String finalItem = item;
+            for (String s1_id : startUp_S1ids) {
+                String finalS1_id = s1_id;
+                
+                String sql = "SELECT s1_id FROM syori1_a "
+                        // 削除レコードを除く
+                        + "WHERE delflg = false "
+                        // 処理設定_親のrun_hostが空、又は、パラメータで渡されたrun_hostと一致すること
+                        + "AND (run_host = '' OR UPPER(run_host) = UPPER(:run_host))"
+                        + "AND s1_id = :s1_id ";
+
+                MapSqlParameterSource param = new MapSqlParameterSource();
+                param.addValue("run_host", localHost);
+                param.addValue("s1_id", Integer.parseInt(s1_id));
+                List<String> result = namedJdbcTemplate.query(sql, param, (rs, rowNum) -> rs.getString("s1_id"));
+                //有効データが無い場合、スキップ
+                if (result.isEmpty()) continue;
+                
                 executor.submit(() -> {
                     // 非同期処理として実行
-                    callAPI(Integer.valueOf(finalItem), "", "", 0, "", jdbcTemplate,jdbcTemplate_com, false, "");
+                    callAPI(Integer.valueOf(finalS1_id), "", "", 0, "", jdbcTemplate,jdbcTemplate_com, false, "");
                 });
             }
 
@@ -397,9 +412,21 @@ public class AutoExec implements ApplicationRunner {
             if (recurringMatch.find()) {
                 scheduler.setRecurring_interval(Integer.parseInt(recurringMatch.group(1)));
                 // 時刻が存在しない場合は "00:00" を設定
-                scheduler.setRecurring_end_time(recurringMatch.group(2) != null ? recurringMatch.group(2) : "00:00");
-                label = label.replace(recurringMatch.group(0), "").trim(); // 繰り返し部分を除去
-            }
+                String endTime = recurringMatch.group(2) != null ? recurringMatch.group(2) : "00:00";
+                String[] endTimeParts = endTime.split(":");
+                int endHours = Integer.parseInt(endTimeParts[0]);
+                int endMinutes = Integer.parseInt(endTimeParts[1]);
+
+                // 終了時刻が24時間以上の場合の処理
+                if (endHours >= 24) {
+                    endHours = endHours % 24;
+                    scheduler.setRecurring_end_time(String.format("%02d:%02d", endHours, endMinutes));
+                } else {
+                    scheduler.setRecurring_end_time(endTime);
+                }
+
+                label = label.replace(recurringMatch.group(0), "").trim();
+            }            
 
             // スケジュールパターンの解析
             if (label.startsWith("毎日")) {
@@ -483,16 +510,15 @@ public class AutoExec implements ApplicationRunner {
         String[] timeParts = scheduler.getExecution_time().split(":");
         int hours = Integer.parseInt(timeParts[0]);
         int minutes = Integer.parseInt(timeParts[1]);
-        // 24時間を超える場合、24で割った余りで時間を設定し、前日フラグをtrueにする
+        // 24時間を超える場合、24で割った余りで時間を設定し、currentDateを前日にセットする
         if (hours >= 24) {
-            hours = hours % 24;
-            //前日として扱う
-            currentDate = currentDate.minusDays(1);
-        }
+            int daysToSubtract = hours / 24; // 必要な日数分を計算
+            hours = hours % 24; // 余りで時間を設定
+            currentDate = currentDate.minusDays(daysToSubtract); // 必要日数分日付をマイナス
+        }        
         LocalTime executionTime = LocalTime.of(hours, minutes);
-        
 
-     // スケジュールパターンに基づく実行条件を確認（曜日・日付のみ）
+        // スケジュールパターンに基づく実行条件を確認（曜日・日付のみ）
         boolean baseMatch = false;
         LocalDateTime nearestDateTime = null; // 直近のスケジュール日時を保持
         LocalDateTime now = LocalDateTime.of(currentDate, currentTime); // 現在日時
@@ -578,8 +604,10 @@ public class AutoExec implements ApplicationRunner {
                         int dayIndex = Arrays.asList(JAPANESE_DAYS).indexOf(weekdayInJapanese.trim());
 
                         if (dayIndex != -1) {
-                            DayOfWeek dayOfWeek = DayOfWeek.of(dayIndex + 1);
+                            // 曜日を日本語から DayOfWeek に変換
+                            DayOfWeek dayOfWeek = DayOfWeek.of(dayIndex + 1);// DayOfWeek は 1 = 月曜日から始まる
                             LocalDate nthDay = currentDate.with(TemporalAdjusters.dayOfWeekInMonth(weekNumber, dayOfWeek));
+                            // 現在の日付と一致するか確認
                             baseMatch = currentDate.equals(nthDay);
 
                             if (isNearestDay && baseMatch) {
@@ -594,10 +622,10 @@ public class AutoExec implements ApplicationRunner {
                                     }
                                 }
                             }
-                            if (nearestDateTime != null) break;
+                            if (baseMatch) break;// 一致が見つかった場合、外側ループを抜ける
                         }
                     }
-                    if (nearestDateTime != null) break;
+                    if (baseMatch) break;// 一致が見つかった場合、外側ループを抜ける
                 }
                 break;
 
@@ -649,11 +677,10 @@ public class AutoExec implements ApplicationRunner {
         Timestamp currentTimestamp = Timestamp.valueOf(LocalDateTime.now());
         Timestamp timeoutTimestamp = Timestamp.valueOf(LocalDateTime.now().minusMinutes(LOCK_TIMEOUT_MINUTES));
 
-        // 古いロックのクリーンアップ（60分以上前のロックを解除）
-        String cleanupSql = "DELETE FROM syori_exclusive WHERE s1_id = :s1_id AND run_host = :run_host AND update_date <= :timeout";
+        // 古いロックのクリーンアップ（LOCK_TIMEOUT_MINUTESで指定した時間を経過しているロックの解除）
+        String cleanupSql = "DELETE FROM syori_exclusive WHERE s1_id = :s1_id AND update_date <= :timeout";
         MapSqlParameterSource cleanupParams = new MapSqlParameterSource()
                 .addValue("s1_id", s1_id)
-                .addValue("run_host", runHost)
                 .addValue("timeout", timeoutTimestamp);
         namedJdbcTemplate.update(cleanupSql, cleanupParams);
 
@@ -692,14 +719,13 @@ public class AutoExec implements ApplicationRunner {
         boolean onDebugLog = Boolean.valueOf(Kai9Utils.getPropertyFromYaml("kai9.on_debug_log"));
         NamedParameterJdbcTemplate namedJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
 
-        String releaseSql = "DELETE FROM syori_exclusive WHERE s1_id = :s1_id AND run_host = :run_host";
+        String releaseSql = "DELETE FROM syori_exclusive WHERE s1_id = :s1_id";
         MapSqlParameterSource releaseParams = new MapSqlParameterSource()
-                .addValue("s1_id", s1_id)
-                .addValue("run_host", runHost);
+                .addValue("s1_id", s1_id);
 
         namedJdbcTemplate.update(releaseSql, releaseParams);
         if (onDebugLog) {
-            Kai9Utils.makeLog("info", "ロック解除完了: s1_id=" + s1_id + ", runHost=" + runHost, AutoExec.class);
+            Kai9Utils.makeLog("info", "ロック解除完了: s1_id=" + s1_id, AutoExec.class);
         }
     }
     

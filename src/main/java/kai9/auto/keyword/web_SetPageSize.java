@@ -43,7 +43,7 @@ public class web_SetPageSize {
             }
 
         } catch (Exception e) {
-            s3p.sr3s.updateError(s3p.sr3, Kai9Utils.GetException(e));
+            s3p.WebUpdateError(s3p.sr3, Kai9Utils.GetException(e));
             return;
         }
     }

@@ -114,6 +114,8 @@ import kai9.som.keyword.SOM_PatchApplyingJobExecutionResultCheck;
 import kai9.som.keyword.SOM_PatchApplyingResultCheck;
 import kai9.som.keyword.SOM_PatchApplyingResultNotification;
 import kai9.som.keyword.SOM_TeamsWrite;
+import kai9.som.keyword.SOM_WinrmConnectivity;
+import kai9.som.service.patch_applying_job_execution_result_Service;
 
 /**
  * キーワード実行:コントローラ
@@ -1014,6 +1016,10 @@ public class ExecSyori {
                                                         // [som]パッチ適用結果通知
                                                         SOM_PatchApplyingResultNotification SOM_PatchApplyingResultNotification = context.getBean(SOM_PatchApplyingResultNotification.class);
                                                         SOM_PatchApplyingResultNotification.exec(Syori3Param);
+                                                    } else if (m_keyword2.getFunc_name().equals("SOM_WinrmConnectivity")) {
+                                                        // [som]winrm疎通
+                                                        SOM_WinrmConnectivity SOM_WinrmConnectivity = context.getBean(SOM_WinrmConnectivity.class);
+                                                        SOM_WinrmConnectivity.exec(Syori3Param);
                                                     } else
 
                                                     if (m_keyword2.getFunc_name().equals("Separator")) {

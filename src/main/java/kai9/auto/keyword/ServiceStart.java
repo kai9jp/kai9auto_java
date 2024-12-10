@@ -9,6 +9,7 @@ import org.json.JSONException;
 import org.springframework.stereotype.Component;
 
 import kai9.auto.common.Syori3Param;
+import kai9.libs.Kai9Utils;
 
 @Component
 public class ServiceStart {
@@ -67,7 +68,7 @@ public class ServiceStart {
                 s3p.sr3s.updateSuccess(this.getClass().getSimpleName(), 100, s3p, "サービスを起動しました" + crlf + output);
             }
         } catch (Exception e) {
-            s3p.sr3s.updateError(s3p.sr3, e.getMessage());
+            s3p.sr3s.updateError(s3p.sr3, Kai9Utils.GetException(e));
         }
     }
 }

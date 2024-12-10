@@ -49,7 +49,7 @@ public class web_CheckValue_ID {
 
             // 第3引数の解析
             String searchCondition = thirdArg[0];
-            timeOut = 30; // デフォルトのタイムアウト値（省略時）
+            timeOut = web_SetWebDriver.TIMEOUT_SECONDS; // デフォルトのタイムアウト値（省略時）
             if (thirdArg.length > 1) {
                 try {
                     timeOut = Integer.parseInt(thirdArg[1].trim());
